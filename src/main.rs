@@ -1,21 +1,122 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-#[derive(Debug)]
-struct Elf {
-    snacks: Vec<Snack>,
+trait Player<T> {
+    fn play(&self, opponent: T) -> u32;
+    fn get_action_score(&self, action: Action) -> u32;
+    fn get_outcome_score(&self, outcome: Outcome) -> u32;
+    fn get_player_outcome(&self, opponent_action: Action) -> Outcome;
+    fn get_player_action_for_outcome(&self, opponent_action: Action, outcome: Outcome) -> Action;
 }
 
-#[derive(Debug, Clone)]
-struct Snack {
-    calories: u32,
+#[derive(Debug, Copy, Clone)]
+pub enum Action {
+    None,
+    Rock,
+    Paper,
+    Scissors,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Elf {
+    action: Action,
+    score: u32,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum Outcome {
+    Loss,
+    Draw,
+    Win,
 }
 
 impl Elf {
-    pub fn total_calories(&self) -> u32 {
-        let snacks = self.snacks.clone();
-        let snacks: Vec<u32> = snacks.into_iter().map(|snack| snack.calories).collect();
-        snacks.into_iter().sum()
+    pub fn new(action: Action) -> Elf {
+        Elf { action, score: 0 }
+    }
+}
+
+impl Player<Elf> for Elf {
+    fn play(&self, opponent: Elf) -> u32 {
+        // get action score for both players
+        // get outcome for the actions
+        // get outcome score
+        // return sum
+        let opponent_action = opponent.action;
+
+        let player_action_score = self.get_action_score(self.action);
+        // let opponent_action_score = opponent.get_action_score(opponent_action);
+        let get_player_outcome = self.get_player_outcome(opponent_action);
+        let player_outcome_score = self.get_outcome_score(get_player_outcome);
+
+        // Elf {
+        player_action_score + player_outcome_score
+        // action: self.action,
+        // }
+    }
+
+    fn get_action_score(&self, action: Action) -> u32 {
+        match action {
+            Action::Rock => 1,
+            Action::Paper => 2,
+            Action::Scissors => 3,
+            Action::None => 0,
+        }
+    }
+
+    fn get_outcome_score(&self, outcome: Outcome) -> u32 {
+        match outcome {
+            Outcome::Draw => 3,
+            Outcome::Loss => 0,
+            Outcome::Win => 6,
+        }
+    }
+
+    fn get_player_action_for_outcome(&self, opponent_action: Action, outcome: Outcome) -> Action {
+        match outcome {
+            Outcome::Draw => match opponent_action {
+                Action::Rock => Action::Rock,
+                Action::Paper => Action::Paper,
+                Action::Scissors => Action::Scissors,
+                Action::None => panic!("mayne wtf"),
+            },
+            Outcome::Loss => match opponent_action {
+                Action::Rock => Action::Scissors,
+                Action::Paper => Action::Rock,
+                Action::Scissors => Action::Paper,
+                Action::None => panic!("mayne wtf"),
+            },
+            Outcome::Win => match opponent_action {
+                Action::Rock => Action::Paper,
+                Action::Paper => Action::Scissors,
+                Action::Scissors => Action::Rock,
+                Action::None => panic!("mayne wtf"),
+            },
+        }
+    }
+
+    fn get_player_outcome(&self, opponent_action: Action) -> Outcome {
+        match self.action {
+            Action::Rock => match opponent_action {
+                Action::Rock => Outcome::Draw,
+                Action::Paper => Outcome::Loss,
+                Action::Scissors => Outcome::Win,
+                Action::None => panic!("mayne wtf"),
+            },
+            Action::Paper => match opponent_action {
+                Action::Rock => Outcome::Win,
+                Action::Paper => Outcome::Draw,
+                Action::Scissors => Outcome::Loss,
+                Action::None => panic!("mayne wtf"),
+            },
+            Action::Scissors => match opponent_action {
+                Action::Rock => Outcome::Loss,
+                Action::Paper => Outcome::Win,
+                Action::Scissors => Outcome::Draw,
+                Action::None => panic!("mayne wtf"),
+            },
+            Action::None => panic!("mayne wtf"),
+        }
     }
 }
 
@@ -26,65 +127,50 @@ fn read_file(path: &str) -> String {
     contents
 }
 
-fn parse_elves_and_snacks(contents: &str) -> Vec<Elf> {
-    let mut snacks: Vec<Snack> = Vec::new();
-    let mut elves = Vec::new();
-    let mut elf_needs_push = true;
+fn parse_strategy_guide(contents: &str) -> u32 {
+    let mut player = Elf::new(Action::None);
+    let mut opponent = Elf::new(Action::None);
+    let mut total_score = 0;
 
     for line in contents.lines() {
-        if line.len() > 0 {
-            snacks.push(Snack {
-                calories: line.parse::<u32>().unwrap(),
-            });
-            elf_needs_push = true;
-        } else {
-            elves.push(Elf {
-                snacks: snacks.clone(),
-            });
-            snacks.clear();
-            elf_needs_push = false;
-        }
+        let (str_opp_action, str_player_action) = line.split_at(2);
+
+        let opponent_action = match str_opp_action.trim() {
+            "A" => Action::Rock,
+            "B" => Action::Paper,
+            "C" => Action::Scissors,
+            &_ => todo!(),
+        };
+        // Part 1
+        // let player_action = match str_player_action.trim() {
+        //     "Y" => Action::Paper,
+        //     "X" => Action::Rock,
+        //     "Z" => Action::Scissors,
+        //     &_ => todo!(),
+        // };
+
+        // Part 2
+        let player_outcome = match str_player_action.trim() {
+            "X" => Outcome::Loss,
+            "Y" => Outcome::Draw,
+            "Z" => Outcome::Win,
+            &_ => todo!(),
+        };
+
+        let player_action = player.get_player_action_for_outcome(opponent_action, player_outcome);
+
+        player.action = player_action;
+        opponent.action = opponent_action;
+
+        total_score += player.play(opponent);
     }
 
-    if elf_needs_push {
-        elves.push(Elf { snacks });
-    }
-
-    elves
-}
-
-fn get_top_3_elves_calories_sum(elves_calories: Vec<u32>) -> [u32; 3] {
-    // horrible, but it works
-    let mut elves_calories: Vec<u32> = elves_calories.clone();
-    elves_calories.sort_unstable_by(|a, b| a.cmp(b));
-    elves_calories.reverse();
-
-    [
-        elves_calories.remove(0),
-        elves_calories.remove(0),
-        elves_calories.remove(0),
-    ]
+    total_score
 }
 
 fn main() {
     let contents = read_file("input.txt");
-    let elves = parse_elves_and_snacks(contents.as_str());
+    let score = parse_strategy_guide(contents.as_str());
 
-    let elves_calories: Vec<u32> = elves.into_iter().map(|x| x.total_calories()).collect();
-    let most_calories = elves_calories.iter().max().unwrap();
-    let elf_with_most_calories = elves_calories
-        .iter()
-        .position(|&c| c == *most_calories)
-        .unwrap();
-
-    println!(
-        "elf with most calories is {} with {}",
-        elf_with_most_calories, most_calories
-    );
-
-    let top_3_elves = get_top_3_elves_calories_sum(elves_calories)
-        .into_iter()
-        .sum::<u32>();
-
-    println!("top 3 total is {}", top_3_elves)
+    println!("score is {}", score)
 }
