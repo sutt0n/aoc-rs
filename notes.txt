@@ -1,0 +1,54 @@
+
+========== [4/21]
+
+- i'm going to be mapping shit out here... because i need to a better way to understand this better.
+
+1. mining-proxy
+  - `main` called
+  - global static `ROUTING_LOGIC` set to `initialize_r_logic(upstreams)`
+    - initialize_r_logic():
+      -
+
+- maybe can use ROUTING_LOGIC to route messages?
+
+
+========== [4/22]
+
+select_upstream() was not the right approach to implement the switching logic... 
+it seems to be that we need to implement routing logic for channels in regards to percentage
+mapping things out seem to be going well. right now, it's just continuing to play around with things. the proxy works as such (shitty drawing):
+
+POOL 1 ---\  ____             ____ 
+                [U] PROXY [D]|     > MINING NODE
+POOL 2 ---/  ‾‾‾‾             ‾‾‾‾
+
+where [U] is the upstream and [D] is the downstream...
+
+the proxy seems to have a tcp connection for each upstream and a listener for N number of nodes (e.g. mining devices). 
+it utilizes channels to dispatch messages across these TCP connections appropriately. we need to somehow dissect 
+this logic in order to tweak it and appropriately switch messages from mining nodes to appropriate upstreams / pools.
+
+we have a configuration `UpstreamMiningNode.percentage<u8>` set for upstreams; we just need to be able to pull that information in 
+on the channel logic and dispatch appropriately based on the internal `UpstreamMiningNode.relay_count` and calculate from there.
+
+in order to dispatch appropriately, we'll probably need to find a way to read the channel logic / map... 
+
+...
+
+now that i'm thinking about this, this shouldn't be a message type... that would be way too hacky. 
+we could have a dedicated "switch" connection that's being listened to by the proxy.
+this _could_ be another upstream with a specific Channel Kind type, e.g. ProxySwitch
+
+tonight i found out that there's a bit for reconnecting via Mining::Reconnect. it's a message from the upstream to the downstream. 
+if i can find a way to trigger that with the arguments including the new host and port, we should be in business. we don't want to 
+change anything in the protocols.
+
+========== [4/23]
+not much time to tinker with sv2 tonight as much as i wanted...
+
+...i am going to get a halfass working example going, i think. i didn't think i'd get this far, but 
+things are looking _maybe_ promising... we'll see...
+
+as an aside, i haven't done an AoC puzzle today. maybe we can tomorrow. i'm too high for this.
+as another aside, the front flowerbed looks great. i hope the hydrangeas will live. they looked
+sad whenever we transplanted them into the ground. i hope they'll take. fingers crossed.
