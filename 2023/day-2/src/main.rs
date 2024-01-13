@@ -1,25 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-
-// #[derive(Debug)]
-// struct Elf {
-//     snacks: Vec<Snack>,
-// }
-//
-// #[derive(Debug, Clone)]
-// struct Snack {
-//     calories: u32,
-// }
-//
-// impl Elf {
-//     pub fn total_calories(&self) -> u32 {
-//         let snacks = self.snacks.clone();
-//         let snacks: Vec<u32> = snacks.into_iter().map(|snack| snack.calories).collect();
-//         snacks.into_iter().sum()
-//     }
-// }
-
 #[derive(Debug, Clone, Copy)]
 struct Game {
     id: i32,
@@ -44,34 +25,6 @@ fn read_file(path: &str) -> String {
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     contents
-}
-
-fn generate_combinations(objects: &Vec<Game>, current: Vec<Game>, index: usize, target_red: i32, target_green: i32, target_blue: i32) -> Vec<Vec<Game>> {
-    let mut combinations: Vec<Vec<Game>> = Vec::new();
-
-    if current.len() == 3 {
-        let mut red = 0;
-        let mut green = 0;
-        let mut blue = 0;
-
-        for game in current.clone().into_iter() {
-            red += game.red;
-            green += game.green;
-            blue += game.blue;
-        }
-
-        if red == target_red && green == target_green && blue == target_blue {
-            combinations.push(current);
-        }
-    } else {
-        for i in index..objects.len() {
-            let mut current = current.clone();
-            current.push(objects[i].clone());
-            combinations.append(&mut generate_combinations(objects, current, i + 1, target_red, target_green, target_blue));
-        }
-    }
-
-    combinations
 }
 
 fn main() -> Result<(), std::io::Error> {
